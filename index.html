@@ -1,0 +1,146 @@
+<!DOCTYPE html><html>
+<head>
+  <title>Login - RLMepro</title>
+  <style>
+    body {
+      font-family: monospace;
+      background: #f8f8f8;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 400px;
+      margin: 60px auto;
+      background: #f8f8f8;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadw: 0 0 15px rgba(0, 0, 0, 0.1);
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      font-family: monospace;
+      border: 1px solid black;
+      border-radius: 6px;
+      font-size: 15px;
+    }
+    button {
+      background-color: white;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    button:hover {
+      background-color: #f0f0f0;
+    }
+    .switch {
+      text-align: center;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+    .switch a {
+      text-decoration: none;
+      color: black;
+      font-weight: bold;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2 id="formTitle">Login to RLMe</h2>
+    <div id="loginForm">
+      <input type="text" id="loginMobile" placeholder="Mobile Number">
+      <input type="password" id="loginPassword" placeholder="Password">
+      <button onclick="loginUser()">Login</button>
+      <div class="switch">
+        Don't have an account? <a href="#" onclick="toggleForms(true)">Create new account</a>
+      </div>
+    </div><div id="registerForm" class="hidden">
+  <input type="text" id="regName" placeholder="Name">
+  <input type="text" id="regMobile" placeholder="Mobile Number">
+  <input type="password" id="regPassword" placeholder="Password">
+  <button onclick="registerUser()">Register</button>
+  <div class="switch">
+    Already have an account? <a href="#" onclick="toggleForms(false)">Login</a>
+  </div>
+</div>
+
+  </div>  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import {
+      getDatabase, ref, get, set, update, child
+    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDxZ2R888I036Dcb0BMOhVKJmI7lTTTjtk",
+      authDomain: "rlmepro.firebaseapp.com",
+      projectId: "rlmepro",
+      storageBucket: "rlmepro.appspot.com",
+      messagingSenderId: "471061906186",
+      appId: "1:471061906186:web:97035ed340d8e6cddbf0f3"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    window.toggleForms = function (registerMode) {
+      document.getElementById("registerForm").classList.toggle("hidden", !registerMode);
+      document.getElementById("loginForm").classList.toggle("hidden", registerMode);
+      document.getElementById("formTitle").textContent = registerMode ? "Register" : "Login";
+    }
+
+    window.loginUser = async function () {
+      const mobile = document.getElementById("loginMobile").value.trim();
+      const password = document.getElementById("loginPassword").value.trim();
+      if (!mobile || !password) return alert("Fill all fields");
+
+      const snap = await get(ref(db, "users"));
+      if (!snap.exists()) return alert("No users found");
+      const users = snap.val();
+      const entry = Object.entries(users).find(([id, user]) => user.mobile === mobile && user.password === password);
+
+      if (entry) {
+        const [uid, user] = entry;
+        if (user.blocked) return alert("User is blocked by admin.");
+        localStorage.setItem("uid", uid);
+        location.href = "dashboard.html";
+      } else {
+        alert("Invalid mobile or password");
+      }
+    }
+
+    window.registerUser = async function () {
+      const name = document.getElementById("regName").value.trim();
+      const mobile = document.getElementById("regMobile").value.trim();
+      const password = document.getElementById("regPassword").value.trim();
+      if (!name || !mobile || !password) return alert("Fill all fields");
+
+      const usersSnap = await get(ref(db, "users"));
+      const users = usersSnap.exists() ? usersSnap.val() : {};
+      const mobileExists = Object.values(users).some(user => user.mobile === mobile);
+
+      if (mobileExists) {
+        alert("Mobile number already registered.");
+        return;
+      }
+
+      const uid = Date.now().toString();
+      await set(ref(db, "users/" + uid), {
+        name,
+        mobile,
+        password,
+        balance: 0,
+        blocked: false
+      });
+      alert("Account created. Please login.");
+      toggleForms(false);
+    }
+  </script></body>
+</html>

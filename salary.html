@@ -1,0 +1,113 @@
+<!DOCTYPE html><html>
+<head>
+  <title>Salary - RLMepro</title>
+  <style>
+    body {
+      font-family: monospace;
+      background: #f0f0f0;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 800px;
+      margin: 50px auto;
+      background: white;
+      padding: 25px;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+    th, td {
+      padding: 12px;
+      border: 1px solid #ccc;
+      text-align: left;
+    }
+    th {
+      background-color: #fafafa;
+    }
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    .scrollable {
+      max-height: 400px;
+      overflow-y: auto;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Work & Salary History</h2>
+    <div class="scrollable">
+      <table>
+        <thead>
+          <tr>
+            <th>Article ID</th>
+            <th>Type</th>
+            <th>Article</th>
+            <th>Reward</th>
+            <th>Status</th>
+            <th>Remark</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="salaryHistory"></tbody>
+      </table>
+    </div>
+  </div>  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDxZ2R888I036Dcb0BMOhVKJmI7lTTTjtk",
+      authDomain: "rlmepro.firebaseapp.com",
+      projectId: "rlmepro",
+      storageBucket: "rlmepro.appspot.com",
+      messagingSenderId: "471061906186",
+      appId: "1:471061906186:web:97035ed340d8e6cddbf0f3"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const uid = localStorage.getItem("uid");
+    if (!uid) {
+      alert("Please login first.");
+      location.href = "login.html";
+    }
+
+    const salaryEl = document.getElementById("salaryHistory");
+
+    onValue(ref(db, "work_rewards"), (snapshot) => {
+      const data = snapshot.val();
+      salaryEl.innerHTML = "";
+      if (!data) {
+        salaryEl.innerHTML = '<tr><td colspan="7">No salary records found.</td></tr>';
+        return;
+      }
+      const userEntries = Object.values(data).filter(x => x.uid === uid).reverse();
+      userEntries.forEach(entry => {
+        salaryEl.innerHTML += `
+          <tr>
+            <td>${entry.id}</td>
+            <td>${entry.type}</td>
+            <td>${entry.article}</td>
+            <td>$${entry.reward || 0}</td>
+            <td>${entry.status}</td>
+            <td>${entry.remark || "-"}</td>
+            <td>${entry.date}</td>
+          </tr>
+        `;
+      });
+    });
+  </script></body>
+</html>

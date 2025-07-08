@@ -1,0 +1,96 @@
+<!DOCTYPE html><html>
+<head>
+  <title>Submit Work - RLMepro</title>
+  <style>
+    body {
+      font-family: monospace;
+      background: #f0f0f0;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 50px auto;
+      background: #f0f0f0;
+      padding: 25px;
+      border-radius: 16px;
+      box-shaow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    textarea, select, button {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 1px solid black;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 14px;
+    }
+    button {
+      background: white;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    button:hover {
+      background: #f0f0f0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Submit Article</h2>
+    <textarea id="article" placeholder="Write your article heading..."></textarea>
+    <select id="category">
+      <option value="crypto">Crypto</option>
+      <option value="political">Political</option>
+      <option value="sports">Sports</option>
+    </select>
+    <button onclick="submitWork()">Submit</button>
+  </div>  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import {
+      getDatabase, ref, push, set
+    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDxZ2R888I036Dcb0BMOhVKJmI7lTTTjtk",
+      authDomain: "rlmepro.firebaseapp.com",
+      projectId: "rlmepro",
+      storageBucket: "rlmepro.appspot.com",
+      messagingSenderId: "471061906186",
+      appId: "1:471061906186:web:97035ed340d8e6cddbf0f3"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const uid = localStorage.getItem("uid");
+    if (!uid) {
+      alert("Please login first.");
+      location.href = "login.html";
+    }
+
+    window.submitWork = async function () {
+      const article = document.getElementById("article").value.trim();
+      const category = document.getElementById("category").value;
+      if (!article) return alert("Article cannot be empty");
+
+      const postRef = push(ref(db, "work_rewards"));
+      const data = {
+        id: postRef.key,
+        uid,
+        type: category,
+        article,
+        reward: 0,
+        status: "pending",
+        remark: "",
+        date: new Date().toLocaleString()
+      };
+      await set(postRef, data);
+      alert("Article submitted successfully!");
+      location.reload();
+    }
+  </script></body>
+</html>

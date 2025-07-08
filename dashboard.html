@@ -1,0 +1,183 @@
+<!DOCTYPE html><html>
+<head>
+  <title>Dashboard - RLMepro</title>
+  <style>
+    body {
+      background: #f5f5f5;
+      font-family: monospace;
+      margin: 0;
+      padding: 0;
+    }
+    .dashboard-container {
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 25px;
+      background: #f0f0f0;
+      border-radius: 16px;
+      box-shaow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    .dashboard-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .dashboard-header h2 {
+      margin: 0;
+      font-size: 24px;
+    }
+    .user-info {
+      text-align: center;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+    .dashboard-buttons {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 25px 0;
+    }
+    .dashboard-buttons button {
+      flex: 1;
+      padding: 12px;
+      border: 1px solid black;
+      background: white;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    .dashboard-buttons button:hover {
+      background: #f0f0f0;
+    }
+    .transactions-section {
+      margin-top: 30px;
+    }
+    .transactions-section h3 {
+      margin-bottom: 12px;
+    }
+    .transactions-table {
+      width: 100%;
+      border-collapse: collapse;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+    .transactions-table th,
+    .transactions-table td {
+      padding: 10px;
+      border: 1px solid #ccc;
+      text-align: left;
+    }
+    .transactions-table th {
+      background: #fafafa;
+    }
+    .transactions-table tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <h2>Welcome to RLMepro Dashboard</h2>
+    </div><div class="user-info">
+  <div><strong>Name:</strong> <span id="name"></span></div>
+  <div><strong>Mobile:</strong> <span id="mobile"></span></div>
+  <div><strong>Balance:</strong> $<span id="balance"></span></div>
+</div>
+
+<div class="dashboard-buttons">
+  <button onclick="location.href='withdraw.html'">WITHDRAW</button>
+  <button onclick="location.href='work.html'">WORK</button>
+  <button onclick="location.href='salary.html'">SALARY</button>
+</div>
+
+<div class="transactions-section">
+  <h3>Recent Transactions</h3>
+  <table class="transactions-table">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Amount</th>
+        <th>Status</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody id="history"></tbody>
+  </table>
+</div>
+
+  </div>  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import {
+      getDatabase, ref, get
+    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDxZ2R888I036Dcb0BMOhVKJmI7lTTTjtk",
+      authDomain: "rlmepro.firebaseapp.com",
+      projectId: "rlmepro",
+      storageBucket: "rlmepro.appspot.com",
+      messagingSenderId: "471061906186",
+      appId: "1:471061906186:web:97035ed340d8e6cddbf0f3"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const uid = localStorage.getItem("uid");
+
+    if (!uid) {
+      alert("Please login first.");
+      location.href = "login.html";
+    }
+
+    const nameEl = document.getElementById("name");
+    const mobileEl = document.getElementById("mobile");
+    const balanceEl = document.getElementById("balance");
+    const historyEl = document.getElementById("history");
+
+    async function loadUser() {
+      const snap = await get(ref(db, "users/" + uid));
+      if (!snap.exists()) return;
+      const data = snap.val();
+      nameEl.textContent = data.name;
+      mobileEl.textContent = data.mobile;
+      balanceEl.textContent = data.balance.toFixed(2);
+    }
+
+    async function loadTransactions() {
+      const snap = await get(ref(db, "withdrawals"));
+      const txs = [];
+      if (snap.exists()) {
+        for (const [id, tx] of Object.entries(snap.val())) {
+          if (tx.uid === uid) {
+            txs.push({ type: "Withdrawal", ...tx });
+          }
+        }
+      }
+
+      const workSnap = await get(ref(db, "work_rewards"));
+      if (workSnap.exists()) {
+        for (const [id, tx] of Object.entries(workSnap.val())) {
+          if (tx.uid === uid && tx.status !== "pending") {
+            txs.push({ type: "Work Reward", ...tx });
+          }
+        }
+      }
+
+      txs.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      historyEl.innerHTML = txs.map(t => `
+        <tr>
+          <td>${t.type}</td>
+          <td>$${t.amount}</td>
+          <td>${t.status}</td>
+          <td>${t.date}</td>
+        </tr>
+      `).join("") || '<tr><td colspan="4">No transactions found</td></tr>';
+    }
+
+    loadUser();
+    loadTransactions();
+  </script></body>
+</html>

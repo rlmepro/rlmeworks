@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>RLMepro | Deposit</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <style>
+    body {
+      font-family: monospace;
+      background: #ffffff;
+      padding: 20px;
+    }
+
+    .form-box, .qr-box, .receipt-box {
+      border: 2px solid #000;
+      padding: 20px;
+      margin-bottom: 25px;
+      border-radius: 10px;
+      background: #f7f7f7;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      font-family: monospace;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1.5px solid black;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      background: black;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    #receiptBox {
+      display: none;
+    }
+
+    #qrCanvas {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>💰 Request Deposit</h2>
+
+  <div class="form-box">
+    <input type="number" id="depositAmount" placeholder="Enter amount to request" />
+    <button onclick="generateDepositCode()">Generate Code & QR</button>
+  </div>
+
+  <div class="qr-box" id="qrBox" style="display:none;">
+    <p><b>Deposit Code:</b> <span id="depositCodeDisplay"></span></p>
+    <canvas id="qrCanvas"></canvas>
+    <p><small>This code is valid for 2 minutes.</small></p>
+  </div>
+
+  <div class="receipt-box" id="receiptBox">
+    <h3>🧾 Deposit Receipt</h3>
+    <p><b>User:</b> <span id="rUser"></span></p>
+    <p><b>Amount:</b> ₹<span id="rAmount"></span></p>
+    <p><b>Code:</b> <span id="rCode"></span></p>
+    <p><b>Time:</b> <span id="rTime"></span></p>
+    <p><b>Txn ID:</b> <span id="rTxnId"></span></p>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDBwEFyOtJ1eQGP-CBUSRZATmdJqJhQrZI",
+      authDomain: "rlmeearn-ada55.firebaseapp.com",
+      databaseURL: "https://rlmeearn-ada55-default-rtdb.firebaseio.com",
+      projectId: "rlmeearn-ada55",
+      storageBucket: "rlmeearn-ada55.firebasestorage.app",
+      messagingSenderId: "880465668866",
+      appId: "1:880465668866:web:2f21422e32a1cb6fef701b"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const user = JSON.parse(localStorage.getItem("loggedInUser"));
+    if (!user) {
+      alert("Login first");
+      window.location.href = "login.html";
+    }
+
+    function generateRandomCode() {
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      let code = "";
+      for (let i = 0; i < 6; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return code;
+    }
+
+    function generateTxnId() {
+      return "TXN" + Math.floor(10000000 + Math.random() * 90000000);
+    }
+
+    async function generateDepositCode() {
+      const amount = parseInt(document.getElementById("depositAmount").value);
+      if (!amount || amount <= 0) return alert("Enter valid amount.");
+
+      const code = generateRandomCode();
+      const timestamp = Date.now();
+      const txnId = generateTxnId();
+
+      const depositData = {
+        uid: user.userId,
+        code,
+        amount,
+        time: timestamp,
+        status: "pending",
+        txnId
+      };
+
+      // Save code to Firebase
+      await set(ref(db, `depositCodes/${code}`), depositData);
+
+      // Show QR and code
+      document.getElementById("qrBox").style.display = "block";
+      document.getElementById("depositCodeDisplay").innerText = code;
+      QRCode.toCanvas(document.getElementById("qrCanvas"), code);
+
+      // Show receipt
+      document.getElementById("receiptBox").style.display = "block";
+      document.getElementById("rUser").innerText = user.userId;
+      document.getElementById("rAmount").innerText = amount;
+      document.getElementById("rCode").innerText = code;
+      document.getElementById("rTime").innerText = new Date().toLocaleString();
+      document.getElementById("rTxnId").innerText = txnId;
+
+      // Auto-expire code after 2 minutes
+      setTimeout(async () => {
+        const codeRef = ref(db, `depositCodes/${code}`);
+        await set(codeRef, null);
+        alert("Deposit code expired.");
+        location.reload();
+      }, 2 * 60 * 1000); // 2 minutes
+    }
+
+    window.generateDepositCode = generateDepositCode;
+  </script>
+
+</body>
+</html>

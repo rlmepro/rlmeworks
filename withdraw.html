@@ -1,0 +1,165 @@
+<!DOCTYPE html><html>
+<head>
+  <title>Withdraw - RLMepro</title>
+  <style>
+    body {
+      font-family: monospace;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 500px;
+      margin: 50px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      box-shaow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 1px solid black;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 14px;
+    }
+    button {
+      background: white;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #f0f0f0;
+    }
+    .history {
+      margin-top: 30px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ccc;
+      text-align: left;
+    }
+    th {
+      background: #fafafa;
+    }
+    tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>UPI Withdrawal</h2>
+    <input type="text" id="upiId" placeholder="Enter UPI ID (must contain @)">
+    <input type="number" id="amount" placeholder="Enter amount (min $11)">
+    <button onclick="submitWithdrawal()">Submit Withdrawal</button><div class="history">
+  <h3>Your Withdrawal History</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>UPI ID</th>
+        <th>Amount</th>
+        <th>Status</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody id="withdrawalHistory"></tbody>
+  </table>
+</div>
+
+  </div>  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import {
+      getDatabase, ref, push, set, get, onValue
+    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDxZ2R888I036Dcb0BMOhVKJmI7lTTTjtk",
+      authDomain: "rlmepro.firebaseapp.com",
+      projectId: "rlmepro",
+      storageBucket: "rlmepro.appspot.com",
+      messagingSenderId: "471061906186",
+      appId: "1:471061906186:web:97035ed340d8e6cddbf0f3"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const uid = localStorage.getItem("uid");
+
+    if (!uid) {
+      alert("Please login first.");
+      location.href = "login.html";
+    }
+
+    window.submitWithdrawal = async function () {
+      const upiId = document.getElementById("upiId").value.trim();
+      const amount = parseFloat(document.getElementById("amount").value.trim());
+      if (!upiId.includes("@")) return alert("Invalid UPI ID");
+      if (isNaN(amount) || amount < 11) return alert("Minimum withdrawal is $11");
+
+      const userSnap = await get(ref(db, `users/${uid}`));
+      if (!userSnap.exists()) return;
+      const user = userSnap.val();
+
+      const pendingSnap = await get(ref(db, "withdrawals"));
+      const hasPending = pendingSnap.exists() && Object.values(pendingSnap.val()).some(x => x.uid === uid && x.status === "pending");
+      if (hasPending) return alert("You already have a pending withdrawal.");
+      if (user.balance < amount) return alert("Insufficient balance");
+
+      const txRef = push(ref(db, "withdrawals"));
+      const newWithdraw = {
+        id: txRef.key,
+        uid,
+        mobile: user.mobile,
+        upi: upiId,
+        amount,
+        status: "pending",
+        date: new Date().toLocaleString()
+      };
+
+      await set(txRef, newWithdraw);
+      await set(ref(db, `users/${uid}/balance`), user.balance - amount);
+      alert("Withdrawal request submitted");
+      location.reload();
+    }
+
+    function loadHistory() {
+      const tbody = document.getElementById("withdrawalHistory");
+      onValue(ref(db, "withdrawals"), snap => {
+        const data = snap.val();
+        tbody.innerHTML = "";
+        if (!data) {
+          tbody.innerHTML = '<tr><td colspan="4">No history found</td></tr>';
+          return;
+        }
+        const entries = Object.values(data).filter(x => x.uid === uid).reverse();
+        entries.forEach(w => {
+          tbody.innerHTML += `
+            <tr>
+              <td>${w.upi}</td>
+              <td>$${w.amount}</td>
+              <td>${w.status}</td>
+              <td>${w.date}</td>
+            </tr>
+          `;
+        });
+      });
+    }
+
+    loadHistory();
+  </script></body>
+</html>
