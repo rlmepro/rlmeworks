@@ -171,7 +171,7 @@
       historyEl.innerHTML = txs.map(t => `
         <tr>
           <td>${t.type}</td>
-          <td>$${t.amount}</td>
+          <td>$${t.amount || '0.00'}</td>
           <td>${t.status}</td>
           <td>${t.date}</td>
         </tr>
