@@ -1,61 +1,79 @@
-<!DOCTYPE html><html>
+<!DOCTYPE html>
+<html>
 <head>
- <title>Login - RLMepro</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - RLMepro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body {
-      font-family: monospace;
-      background: #f8f8f8;
+    html, body {
       margin: 0;
       padding: 0;
+      height: 100%;
+      font-family: monospace;
+      background: url('https://media.istockphoto.com/id/1358309521/vector/money-cash-seamless-background-dollar-currency-money-signs-backdrop-for-financial-business.jpg?s=612x612&w=0&k=20&c=FuMn1Cqosz49pa8Bankjfk9IsQeQKZ9bERMY25G1FwQ=') no-repeat center center fixed;
+      background-size: cover;
     }
+
     .container {
+      width: 90%;
       max-width: 400px;
-      margin: 60px auto;
-      background: #f8f8f8;
       padding: 30px;
-      border-radius: 12px;
-      box-shadw: 0 0 15px rgba(0, 0, 0, 0.1);
+      background: rgba(255, 255, 255, 0.95);
+      border: 2px solid black;
+      border-radius: 16px;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
     }
+
     h2 {
       text-align: center;
-      margin-bottom: 25px;
+      margin-bottom: 20px;
     }
+
     input, button {
       width: 100%;
       padding: 12px;
       margin: 10px 0;
       font-family: monospace;
       border: 1px solid black;
-      border-radius: 6px;
+      border-radius: 8px;
       font-size: 15px;
     }
+
     button {
       background-color: white;
       cursor: pointer;
       transition: background-color 0.2s;
     }
+
     button:hover {
-      background-color: #f0f0f0;
+      background-color: #eee;
     }
+
     .switch {
       text-align: center;
       margin-top: 10px;
       font-size: 14px;
     }
+
     .switch a {
       text-decoration: none;
       color: black;
       font-weight: bold;
     }
+
     .hidden {
       display: none;
     }
   </style>
 </head>
 <body>
+
   <div class="container">
     <h2 id="formTitle">Login to RLMe</h2>
+
     <div id="loginForm">
       <input type="text" id="loginMobile" placeholder="Mobile Number">
       <input type="password" id="loginPassword" placeholder="Password">
@@ -63,20 +81,23 @@
       <div class="switch">
         Don't have an account? <a href="#" onclick="toggleForms(true)">Create new account</a>
       </div>
-    </div><div id="registerForm" class="hidden">
-  <input type="text" id="regName" placeholder="Name">
-  <input type="text" id="regMobile" placeholder="Mobile Number">
-  <input type="password" id="regPassword" placeholder="Password">
-  <button onclick="registerUser()">Register</button>
-  <div class="switch">
-    Already have an account? <a href="#" onclick="toggleForms(false)">Login</a>
-  </div>
-</div>
+    </div>
 
-  </div>  <script type="module">
+    <div id="registerForm" class="hidden">
+      <input type="text" id="regName" placeholder="Name">
+      <input type="text" id="regMobile" placeholder="Mobile Number">
+      <input type="password" id="regPassword" placeholder="Password">
+      <button onclick="registerUser()">Register</button>
+      <div class="switch">
+        Already have an account? <a href="#" onclick="toggleForms(false)">Login</a>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
     import {
-      getDatabase, ref, get, set, update, child
+      getDatabase, ref, get, set
     } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
 
     const firebaseConfig = {
@@ -94,7 +115,7 @@
     window.toggleForms = function (registerMode) {
       document.getElementById("registerForm").classList.toggle("hidden", !registerMode);
       document.getElementById("loginForm").classList.toggle("hidden", registerMode);
-      document.getElementById("formTitle").textContent = registerMode ? "Register" : "Login";
+      document.getElementById("formTitle").textContent = registerMode ? "Register" : "Login to RLMe";
     }
 
     window.loginUser = async function () {
@@ -123,8 +144,8 @@
       const password = document.getElementById("regPassword").value.trim();
       if (!name || !mobile || !password) return alert("Fill all fields");
 
-      const usersSnap = await get(ref(db, "users"));
-      const users = usersSnap.exists() ? usersSnap.val() : {};
+      const snap = await get(ref(db, "users"));
+      const users = snap.exists() ? snap.val() : {};
       const mobileExists = Object.values(users).some(user => user.mobile === mobile);
 
       if (mobileExists) {
@@ -143,5 +164,6 @@
       alert("Account created. Please login.");
       toggleForms(false);
     }
-  </script></body>
+  </script>
+</body>
 </html>
